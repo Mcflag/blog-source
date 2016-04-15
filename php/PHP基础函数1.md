@@ -95,6 +95,10 @@ php中使用ini_set函数进行设置，比如开启显示错误信息的设置�
 
 	error_reporting(E_ALL | E_STRICT);//E_ALL并不包含E_STRICT
 
+错误控制运算符（@），当在一个函数名之前使用该运算符时，可以阻止该函数调用可能产生的任何错误消息或警告，该运算符不能阻止错误的发生，只是防止立即显示出错消息：
+
+	@function_name();
+
 ##round()，ceil()，floor()和number_format()函数
 
 round()是对浮点数进行四舍五入，例如：
@@ -568,3 +572,184 @@ PHP5.1以上的版本可以直接在file_put_contents()函数中加入第三个�
 要查找一个目录中的所有内容，最简单的选择是使用scandir()函数，返回一个数组，包含了从给定目录中找到的所有项。但是这个函数是PHP5中添加的，旧版的PHP需要使用opendir()，readdir()，closedir()代替。
 
 还有filesize()和filemtime()函数用于检索文件的修改时间。还用is_dir()和is_file()函数判断是否是目录或者文件。glob()函数可以搜索名字与模式相匹配的文件目录（如*.jpg或filename*.doc）。fileperms()返回文件的权限，fileAtime()返回文件的最后访问时间，fileowner()返回拥有该文件的用户名称。basename()或dirname()函数可以用来返回完整路径字符串中的文件名或目录名。finfo_file()函数用于检测文件的MIME类型。
+
+##创建目录
+
+创建目录的命令是mkdir()，格式是mkdir('directory_name', permissions)。
+
+	mkdir($dir);
+	mkdir($dir,0777);
+
+如果需要创建多级目录，那么需要第三个参数，将第三个参数为true。
+
+	mkdir($dir,0777,true);
+
+如果php拥有权限，则可以使用rmdir()函数来删除现有目录。
+
+##增量读取文件
+
+之前使用file()函数将整个文件读取到一个数组中，但是如果只需要读取文件的一部分，就需要使用fgets()函数。
+
+fgets()函数返回具有指定长度的字符串，通常将该函数放置在while循环中，并用feof()函数来确保没有到达文件的结尾。例如：
+
+	$fp=fopen($file,'rb');
+	while(!feof($fp)){
+		$string=fgets($fp,1024);
+	}
+	fclose($fp);
+
+或者使用fgetcsv()函数，它使用给定的分隔符切分字符串，并返回一个数组。
+
+	$array=fgetcsv($fp,length,delimiter);
+	$array=fgetcsv($fp,1024);
+
+该函数等价于将fgets()和explode()函数结合到一起使用。最后因为这些函数依赖于行尾指示符，所以最好采用额外的保护措施，即启用PHP的auto_detect_line_endings设置，可以使用如下设置：
+
+	ini_set('auto_detect_line_endings',1);
+
+下面的例子持续地读取文件，直到找到一组匹配的用户名和密码：
+
+	ini_set('auto_detect_line_endings',1);
+	$fp=fopen($file,'rb');
+	while($line=fgetcsv($fp,200,"\t")){
+		if(($line[0]==$_POST['username']) && ($line[1]==md5(trim($_POST['password'])))){
+			break;
+		}
+	}
+	fclose($fp);
+
+##php与数据库
+
+php仅用来将SQL语句发送到数据库应用程序，创建表、插入记录，检索到的一些记录甚至是错误，这些执行的结果会从数据库返回到PHP脚本。
+
+PHP的mysql_query()函数将一条SQL命令发送到MySQL。比如：
+
+	$result=mysql_query(SQL command,database connection);
+
+使用数据库时需要建立一个数据库服务器的连接，使用如下连接方式：
+
+	$dbc=mysql_connect(hostname,username,password);
+
+使用完数据库之后需要关闭数据库：
+
+	mysql_close($dbc);
+
+##MySQL错误处理
+
+常见的MySQL错误有：连接MySQL失败；选择数据库失败；无法运行查询；查询没有返回结果；数据没有插入到表中。使用mysql_error()函数返回关于错误的文本信息。
+
+##创建和选择数据库
+
+要使用php创建数据库，可以使用mysql_query()函数结合CREATE DATABASE databasename的SQL命令：
+
+	mysql_query('CREATE DATABASE somedb', $dbc);
+
+当创建完数据库后，可以使用mysql_select_db()函数来选中该数据库：
+
+	mysql_select_db('somedb', $dbc);
+
+任何时候一个数据库只需要创建一次，但每次在其上运行查询之前都需要选中它。
+
+##创建表
+
+创建新表的SQL语句如下：
+
+	CREATE DATABASE tablename(column1 definition,column2 definition,etc...)
+
+每一列的类型，常见的类型有TEXT，VARCHAR(变长字符串)，DATETIME和INT(整数)。
+
+将第一个列创建为主键（primary key），因此一个简单的CREATE语句是：
+
+	CREATE TABLE my_table(
+		id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+		information TEXT
+	)
+
+使用的时候就是使用mysql_query()：
+
+	$query='CREATE TABLE entries(id INT PRIMARY KEY,title TEXT)';
+	mysql_query($query,$dbc);
+
+##向数据库插入数据
+
+要插入数据记录可以通过下面两种模式来使用INSERT的SQL语法：
+
+	INSERT INTO tablename VALUES (value1,value2,value3,etc.)
+	INSERT INTO tablename (column1_name,column2_name) VALUES (value1,value2)
+
+##安全查询语句
+
+因为用户可以在提交的文本中包含撇号和其他查询语句作为输入，那么会破坏SQL查询。比如用户提交';DROP TABLE entries;作为输入，产生的查询为：
+
+	INSERT INTO entries (entry_id, title) VALUES (0, '';DROP TABLE entries;')
+
+这被称作SQL注入攻击，但是这个问题可以使用mysql_real_excape_string()函数对可能危险的字符进行转义。
+
+##从数据库中检索数据
+
+依然使用mysql_query()函数，但检索数据和插入数据有所不同：必须将检索到的信息赋给一个变量，然后使用另一个函数获取数据。检索数据用SELECT查询：
+
+	SELECT what columns FROM what table
+
+从一个表中读取数据，最简单的查询是：
+
+	SELECT * FROM tablename
+
+将查询得到结果赋给一个变量，并使用：
+
+	$result=mysql_query($query,$dbc);
+	$row=mysql_fetch_array($result);
+
+代码中$result是一个查询结果集的引用，mysql_fetch_array()函数从结果集中每次获取一行数据，并在这一个过程中创建一个数组。这个数组会使用已选择的列名作为索引。列名区分大小写。
+
+如果查询返回多行数据，在循环中执行mysql_fetch_array()函数以获取所有行：
+
+	while ($row = mysql_fetch_array($result)){
+		// Do something with $row
+	}
+
+mysql_num_rows()函数返回由SELECT查询返回的记录行数。
+
+##删除数据库中的数据
+
+从数据库中移除记录使用的SQL语法：
+
+	DELETE FROM tablename WHERE column=value
+
+如果只希望删除一条记录，可以为查询指定LIMIT子句：
+
+	DELETE FROM tablename WHERE column=value LIMIT 1
+
+仍然使用mysql_query()函数执行该查询，使用mysql_affected_rows()函数，该函数用于返回INSERT、DELETE或UPDATE查询影响到的行数。
+
+通过使用TRUNCATE TABLE tablename可以清空一个表，TRUNCATE会完全删除并重建一个表。
+
+##更新数据库中的数据
+
+更新数据库使用UPDATE，语法为
+
+	UPDATE tablename SET column1_name=value,column2_name=value2 WHERE some_column=value
+
+和其他查询一样，值是字符串应该将其放在单引号中。
+
+##常见的问题解答
+
+**1、空白页：**如果在提交一个表单或加载一个php脚本之后，Web浏览器看到的是空白页，这可能是由于某个错误中断了页面的执行。首先检查HTML源代码，然后检查PHP是否有错误。
+
+**2、undefined variable或undefined index错误：**检查变量或数组索引的拼写，或者在引用前对其初始化，还要确保变量带有值。
+
+**3、变量不带有值：**可能是引用变量时拼写是否正确，确保正确使用了$_GET、$_POST、$_COOKIE和$_SESSION。如果需要的话使用print_r()函数来检查每个变量的名字和值。
+
+**4、Call to undefined function...错误：**这种错误意味着试图使用一个在PHP中并不存在的函数，导致该错误产生的原因可能是函数名拼写错误，在调用函数前没有定义，或者使用了所在PHP版本所不支持的函数。
+
+**5、Headers already sent错误：**该错误消息表明在Web浏览器已经接收到HTML或一个空白页之后调用了HTTP头相关的函数——header()、setcookie()、session_start()。复查在调用这些函数之前脚本中发生了什么，或使用输出缓冲来避免混乱。
+
+**6、Access denied错误：**在使用数据库时看到了错误消息，确认使用的用户名，密码和主机可能不具备访问数据库的权限，请确认正在使用的值。
+
+**7、Supplied argument is not a valid MySQL result resource错误：**这个消息意味着不恰当的使用了一个查询结果，则通常由于试图在一个没有返回任何记录的查询中检索行。
+
+**8、预置的HTML表单值被截断：**必须将HTML表单中文本框控件的value属性值放置在双引号中，如果不这么做，只有第一个空格之前的部分会被设置为文本框控件的值。
+
+**9、条件或循环语句产生非预期的行为：**检查使用的运算符，以及引用的变量确实正确。
+
+**10、解析错误：**检查每条语句是否都以分号结尾，以及所有的引号、圆括号、方括号和花括号都是配对的。或者逐条检查语句是否正确。
