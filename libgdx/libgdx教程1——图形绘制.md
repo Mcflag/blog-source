@@ -3,11 +3,11 @@ date: 2015-10-10 16:21:38
 tags: [libgdx]
 ---
 
-##摘要
+## 摘要
 Libgdx教程，图形绘制。
 <!--more-->
 
-##libgdx的环境
+## libgdx的环境
 
 下载的libgdx文件包里有libgdx.so库，放在libs文件夹中，android下再放入gdx.jar和gdx-backend-android.jar两个文件即可。
 
@@ -31,7 +31,7 @@ Libgdx教程，图形绘制。
 	public class FirstGame implements ApplicationListener {
 	
 		private SpriteBatch batch;
-
+	
 		@Override
 		public void create() {
 			spriteBatch = new SpriteBatch();
@@ -61,7 +61,7 @@ Libgdx教程，图形绘制。
 		}
 	}
 
-##Texture类，纹理
+## Texture类，纹理
 
 API定义：图片从原始格式解码并上传到GPU就被称为纹理。
 
@@ -79,7 +79,7 @@ Gdx.files是libgdx的文件模块，主要提供5大功能：读取文件，写�
 
 用Gdx.files.internal("data/Potato.jpg")获取图片，调用batch.draw(texture,x,y,width,height)方法绘制图形。x，y是绘图起点坐标，左下角为原点，height和width是图形大小，绘制方向是由下向上，由左至右。
 
-##SpriteBatch类
+## SpriteBatch类
 
 API定义：SpriteBatch用于绘制二维矩形参考纹理（区域），SpriteBatch类可用于批量绘图命令和优化处理的GPU。
 
@@ -90,17 +90,17 @@ API定义：SpriteBatch用于绘制二维矩形参考纹理（区域），Sprite
 	private Texture texture;
 	private Sprite sprite;
 	private SpriteBatch batch;
-
+	
 	@Override
 	public void create(){
 		float w=Gdx.graphics.getWidth();
 		float h=Gdx.graphics.getHeight();
-
+	
 		batch=new SpriteBatch();
 		texture=new Texture(Gdx.files.internal("data/Potato.jpg"));
 		texture.setFilter(TextureFilter.Linear, TextureFilter.Linear);
 	}
-
+	
 	@Override
 	public void render(){
 		Gdx.gl.glClearColor(1,1,1,1);//设置背景色为白色
@@ -110,7 +110,7 @@ API定义：SpriteBatch用于绘制二维矩形参考纹理（区域），Sprite
 		batch.end();
 	}
 
-##TextureRegion类
+## TextureRegion类
 
 API定义：定义了一个矩形区域的纹理，使用坐标系统是x轴指向右，y轴指向下，左上角是原点。
 
@@ -138,7 +138,7 @@ API定义：持有几何形状，颜色和纹理信息来绘制2D图形。增加
 	public SpriteBatch batch;
 	public Texture texture;
 	public Sprite sprite;
-
+	
 	@Override
 	public void create(){
 		batch=new SpriteBatch();
@@ -151,13 +151,13 @@ API定义：持有几何形状，颜色和纹理信息来绘制2D图形。增加
 		sprite.setPosition(150,110);//起始位置设置为（150,110）
 		sprite.setColor(1,1,1,1);//设置颜色
 	}
-
+	
 	@Override
 	public void dispose() {
 		batch.dispose();
 		texture.dispose();
 	}
-
+	
 	@Override
 	public void render() {
 		Gdx.gl.glClearColor(1, 1, 1, 1);// 设置背景颜色为白色
